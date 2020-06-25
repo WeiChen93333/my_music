@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
-import Music from '../views/music/Music.vue'
+import Player from '../views/player/Player.vue'
+import SongPage from '../views/songPage/SongPage.vue'
 
 Vue.use(VueRouter)
 
@@ -11,7 +12,10 @@ Vue.use(VueRouter)
   },
   {
     path: '/music',
-    component: Music
+    components: {
+      player: Player,
+      content: SongPage
+    }
   } 
 ]
 
