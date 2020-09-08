@@ -9,7 +9,9 @@
       </div>
       <div class="container">
         <ul class="song-list" v-show="!lrcVisible">
-        <li v-for="(item, index) in songNames" :key="index"
+        <li        
+          v-for="(item, index) in songNames" :key="index"
+          :class="{current: index === current}"
           @click="selectSong(index)">{{item}}</li>
         </ul>
         <ul v-show="lrcVisible" class="lrc" ref="lrcRef">        
@@ -28,6 +30,7 @@ export default {
     return {
       //歌名 当前歌曲
       songNames: ['派对动物-五月天', '干杯-五月天', '正义之道-黄渤'],
+      audio: null,
       current: 0,
       //歌词时间, 内容, 
       time: [],
@@ -38,21 +41,25 @@ export default {
   },
   created(){        
     this.getLrc()
-  },
-  mounted(){
+
+    // 监听 Play 组件 audio 标签传递
+    this.$bus.$on('audioTransfer', payload => { // payload 是 audio 对象
+      this.audio = payload    
+    })
+    this.$once('audioTransfer', () => {this.$bus.$off('audioTransfer')})
+
     //监听 Play 组件歌曲切换
-    this.$bus.$on('songChange', value => { //value 是当前歌曲在歌曲数组中的索引
-      this.current = value
+    this.$bus.$on('songChange', payload => { //payload 是当前歌曲在歌曲数组中的索引
+      this.current = payload
       this.getLrc() //获取当前歌曲的歌词
     })
-    //监听 Play 组件 audio 标签 timeupdate 事件
-    this.$bus.$on('lrcScroll', value =>{ // value 是 audio 对象
-      this.lrcScroll(value) 
-    })
-  },
-  beforeDestroy(){
-    console.log('beforeDestroy')
+    this.$once('hook:beforeDestory', () => {this.$bus.$off('songChange')})
 
+    //监听 Play 组件 audio 标签 timeupdate 事件
+    this.$bus.$on('lrcScroll', () =>{      
+      this.lrcScroll() 
+    })
+    this.$once('lrcScroll', () => {this.$bus.$off('lrcScroll')})
   },
   methods: {
     //显示/隐藏歌词    
@@ -63,11 +70,11 @@ export default {
     selectSong(index){
       this.showLrc()
       this.current = index
-      this.init()        
+      this.getLrc()        
+      this.audio.play()
     },
-    getLrc(){
-      //准备工作
-      //利用正则切出歌词时间和内容  
+    getLrc(){      
+      //从歌词字符串中得到歌词时间和内容  
       let {lrcStr} = require('../resources/' + this.songNames[this.current] + 'lrc.js')     
       const time = []
       const lrc = []
@@ -82,11 +89,11 @@ export default {
       this.time = time      
     },
     //audio timeupdate 事件 歌词滚动
-    lrcScroll(audio){  
-      let lrcLines = this.$refs.lrcLineRef       
+    lrcScroll(){  
+      let lrcLines = this.$refs.lrcLineRef  
       lrcLines = Array.from(lrcLines)
-      let minute = '0' + parseInt(audio.currentTime / 60)    
-      let second = parseInt(audio.currentTime % 60)
+      let minute = '0' + parseInt(this.audio.currentTime / 60)    
+      let second = parseInt(this.audio.currentTime % 60)
       let currentTimeFormat = minute + ":" + (second < 10 ? "0" : "") + second
       let index = this.time.indexOf(currentTimeFormat);             
       if(index !== -1){               
@@ -104,9 +111,6 @@ export default {
 #song-page-wrapper
   display flex
   justify-content center
-  // background-image url(./sky.jpg)
-  // background-repeat no-repeat
-  // background-size cover
   .song-page 
     flex 1
     max-width 375px
@@ -127,7 +131,9 @@ export default {
           box-sizing content-box
           margin-bottom 10px   
           background-color rgb(240, 244, 248)
-          cursor pointer      
+          cursor pointer
+          &.current 
+            background-color rgb(160, 220, 200) 
       .lrc 
         position absolute
         top 120px         

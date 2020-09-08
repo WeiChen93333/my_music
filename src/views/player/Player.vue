@@ -14,8 +14,7 @@
         </button>      
       </div>  
     </div>
-    <audio
-      autoplay
+    <audio      
       ref="audioRef"
       :src="audioSrc"   
       @timeupdate="timeupdate"
@@ -51,6 +50,7 @@ export default {
   },
   mounted(){
     this.getAudioElement()
+    this.$bus.$emit('audioTransfer', this.audio)
   },
   methods: {
     // 获取 audio 标签
@@ -68,22 +68,22 @@ export default {
       }     
     },    
     prev(){
-      if(this.current == 0){
-        this.$message.show('已是第一首歌曲')        
+      if(this.current === 0){
+        this.current = this.songNames.length - 1     
       }else{
         this.current--           
       }
     },
     next(){
-      if(this.current == this.songNames.length-1){
-        this.$message.show('已无更多歌曲') 
+      if(this.current === this.songNames.length - 1){
+        this.current = 0
       }else{      
         this.current++                     
       }
     },
     timeupdate(){
       //时间更新, 使歌词滚动
-      this.$bus.$emit('lrcScroll', this.audio)
+      this.$bus.$emit('lrcScroll')
     },
     ended(){
       this.next()
@@ -110,11 +110,5 @@ export default {
         font-size 18px
         font-weight 600
       .icon-play, .icon-pause 
-        font-size 32px
-     
-    
-      
-        
-          
-    
+        font-size 32px  
 </style>
